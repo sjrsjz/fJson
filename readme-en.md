@@ -1,6 +1,6 @@
 # fJson
 
-[English](readme_en.md) | [中文](readme.md)
+[English](readme-en.md) | [中文](readme.md)
 
 fJson is a lenient JSON parser that supports comments, unquoted keys, arrays, tuples, etc. It does not support special character escaping but supports multiline strings, multiline comments, and full-width quotes.
 

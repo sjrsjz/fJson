@@ -1,6 +1,6 @@
 # fJson
 
-[English](readme_en.md) | [中文](readme.md)
+[English](readme-en.md) | [中文](readme.md)
 
 fJson 是一个宽松格式的 JSON 解析器，支持注释、不带引号的键、数组、元组等，不支持特殊字符转义但支持跨行字符串、支持多行注释，支持全角引号。
 
