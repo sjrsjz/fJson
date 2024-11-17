@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='fjson',
+    name='simple-fjson',
     version='0.1',
     packages=find_packages(),
     description='A flexible JSON parser',
-    author='sjz1',
+    author='sjrsjz',
     author_email='sjrsjz@gmail.com',
     url='https://github.com/sjrsjz/fjson',  # 项目的URL
     classifiers=[

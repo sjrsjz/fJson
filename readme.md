@@ -43,7 +43,7 @@ text = '''
     },
     key5: [value5, value6, value7],
     key6: (value8, value9),
-    key7: --key10 value10 --key11 value11,
+    key7: (--key10 value10 --key11 value11),
     key8: R"delimiter(
         multi-line
         string
@@ -56,161 +56,9 @@ result = decode(text)
 print(result)
 ```
 
-## 类和函数
+## 函数
 
-### 
-
-fJsonLexer
-
-
-
-负责将输入字符串分解为 token。
-
-### 
-
-fJsonBuilder
-
-
-
-根据 token 构建 JSON 对象。
-
-### 
-
-NextToken
-
-
-
-用于获取下一个 token 列表，自动匹配括号。
-
-### 
-
-fJsonDict
-
-
-
-用于匹配 JSON 字典。
-
-### 
-
-fJsonList
-
-
-
-用于匹配 JSON 列表。
-
-### 
-
-fJsonTuple
-
-
-
-用于匹配 JSON 元组。
-
-### 
-
-fJsonSet
-
-
-
-用于匹配 JSON 集合。
-
-### 
-
-fJsonValue
-
-
-
-用于匹配 JSON 值。
-
-### 
-
-fJsonOrderChange
-
-
-
-用于匹配顺序改变的表达式。
-
-### 
-
-fJsonArgument
-
-
-
-用于匹配 `--key value` 形式的参数。
-
-### 
-
-fJsonPipe
-
-
-
-用于匹配 `A |> B |> C` 形式的管道表达式。
-
-### 
-
-fJsonConcat
-
-
-
-用于匹配 `A + B + C` 形式的连接表达式。
-
-### 
-
-fJsonIfExpression
-
-
-
-用于匹配 `A ? B : C` 形式的条件表达式。
-
-### 
-
-fJsonMulAndDiv
-
-
-
-用于匹配 `A * B / C` 形式的乘除表达式。
-
-### 
-
-fJsonContains
-
-
-
-用于匹配 `A in B` 形式的包含表达式。
-
-### 
-
-fJsonFunctionType
-
-
-
-用于匹配函数类型 `(A, B) -> (C, D)`。
-
-### 
-
-fJsonLines
-
-
-
-用于匹配用分号分隔的多行表达式。
-
-### 
-
-fJsonDeclaration
-
-
-
-用于匹配变量声明 
-
-name:type:=value
-
-。
-
-### 
-
-decode
-
-
+### decode(json_str: str) -> Any
 
 解析 JSON 字符串，返回解析后的对象。
 
@@ -228,12 +76,47 @@ def decode(json_str):
 ## 例子
 
 ```python
-if __name__ == "__main__":
-    text = """
-    (A :> [A,B]) ? ({A: 1, B: 2, C: 3} + {D: 4, E: 5, F: 6}) : ({1, 2, 3} * {4, 5, 6}); test:(A->B):=(A+B)
-    """
-    try:
-        print(decode(text))
-    except Exception as e:
-        print(e)
+import fJson as json
+
+fjson_str = """
+/* This is a comment */
+[
+    {
+        name: 'John',
+        age: 30,
+        city: "New York",
+        male: true
+    }, // 字典
+    {
+        “name”: "Ja" + “ne”,
+        'age': 5 * 5,
+        "city": "London",
+        male: fAlsE
+    }
+],  // 列表
+
+{A,B,C} * {1,2,3}, // 笛卡尔积
+
+(1, 2), // 元组
+
+{1, 2, 3}, // 集合
+
+--draw circle --rotate 90 --fill red --position (0,0) (1,1) (2,2), // 参数组
+
+R"delimiter(
+    multi-line
+    string
+)delimiter", // 多行字符串
+
+$"YmFzZTY0IGVuY29kZWQgYmFzZTY0IGVuY29kZWQ=", // Base64 编码字符串
+
+[1, 2, 3] + [4, 5, 6], // 连接表达式
+
+[1, 2] * [3, 4], // 分量乘法
+
+[1 ,2] * 3 // 列表乘法
+"""
+
+
+print(json.decode(fjson_str))
 ```
