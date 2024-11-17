@@ -1,5 +1,7 @@
 # fJson
 
+[English](readme_en.md) | [中文](readme.md)
+
 fJson is a lenient JSON parser that supports comments, unquoted keys, arrays, tuples, etc. It does not support special character escaping but supports multiline strings, multiline comments, and full-width quotes.
 
 The original intention was to solve the problem of LLMs' quirks, but later it was found that it could actually be used for other purposes, such as parsing command line arguments. Thus, this project was born.
@@ -19,15 +21,7 @@ This project is mainly for Python because Python supports dynamic types, so it c
 
 ## Usage
 
-Except for the 
-
-decode
-
- function, other classes are used to parse JSON. The 
-
-decode
-
- function is the external interface, which takes a string and returns a parsed object.
+Except for the `decode` function, other classes are used to parse JSON. The `decode` function is the external interface, which takes a string and returns a parsed object.
 
 ### Example
 
