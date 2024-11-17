@@ -1,0 +1,1 @@
+from .fjson import decode

@@ -78,7 +78,7 @@ print(decode(text))
 import re
 import base64
 
-DEBUG = True
+DEBUG = False
 
 class fJsonTokenType:
     TokenType_COMMENT = 'COMMENT'
@@ -112,8 +112,8 @@ class fJsonLexer:
 
         def test_number(pos):
             number_pattern = re.compile(r'^\d*\.?\d+([eE][-+]?\d+)?')
-            match = number_pattern.match(str[pos:])
-            return match.end() if match else 0
+            match_ = number_pattern.match(str[pos:])
+            return match_.end() if match_ else 0
 
         def read_number():
             nonlocal currpos
@@ -1029,7 +1029,7 @@ def get_str_from_tokens(tokens):
 
 def decode(json_str):
     """
-    解析JSON字符串
+    解析JSON字符串，返回对应的Python对象
     """
     tokens = fJsonLexer().tokenize(json_str)
     tokens = fJsonLexer().reject_comments(tokens)
@@ -1042,6 +1042,7 @@ if __name__ == "__main__":
     text = """
     (A :> [A,B]) ? ({A: 1, B: 2, C: 3} + {D: 4, E: 5, F: 6}) : ({1, 2, 3} * {4, 5, 6}); test:(A->B):=(A+B)
     """
+    DEBUG = True
     try:
         print(decode(text))
     except Exception as e:
