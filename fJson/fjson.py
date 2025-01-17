@@ -544,6 +544,8 @@ class fJsonTuple:
                 offset += 1
                 continue
             next_token = NextToken(self.tokens).next(offset)
+            if len(next_token) == 0:
+                break
             arg += next_token
             offset += len(next_token)
 
@@ -695,6 +697,8 @@ class fJsonArgument:
                 pair = [None, []]
                 continue
             next_token = NextToken(self.tokens).next(offset)
+            if len(next_token) == 0:
+                break
             if pair[0] is None:
                 pair[0] = next_token
                 offset += len(next_token)
