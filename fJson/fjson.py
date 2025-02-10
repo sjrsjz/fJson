@@ -1146,9 +1146,9 @@ def DataClass(cls: Type[T]) -> Type[T]:
             if not key.startswith('_')
         }
 
-    def to_json(self) -> str:
+    def to_json(self, **kwargs) -> str:
         """将对象转换为JSON字符串"""
-        return encode(self._json_attributes)
+        return encode(self._json_attributes, **kwargs)
 
     def to_dict(self) -> dict:
         """将对象转换为字典"""
