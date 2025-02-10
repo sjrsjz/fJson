@@ -1041,6 +1041,146 @@ def decode(json_str):
     #tokens = Lexer().concat_multi_line_string(tokens)
     return fJsonBuilder(tokens).build()
 
+def encode(obj, indent=None, multi_line=False, ascii_only = False) -> str:
+    """
+    将Python对象编码为JSON字符串
+
+    参数:
+    obj: Python对象
+    indent: 缩进空格数,None表示不缩进
+    multi_line: 是否多行显示
+    ascii_only: 是否只显示ASCII字符
+    """
+    def escape_string(s):
+        s = '"' + s.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n').replace('\t', '\\t') + '"'
+        if ascii_only:
+            s = s.encode('unicode_escape').decode()
+        return s
+
+    def encode_value(obj, level=0):
+        if obj is None:
+            return 'null'
+        if obj is True:
+            return 'true'
+        if obj is False:
+            return 'false'
+        if isinstance(obj, (int, float)):
+            return str(obj)
+        if isinstance(obj, str):
+            return escape_string(obj)
+        if isinstance(obj, bytes):
+            return '$"' + base64.b64encode(obj).decode() + '"'
+
+        # 计算当前和下一级的缩进
+        curr_indent = ' ' * (indent * level) if indent else ''
+        next_indent = ' ' * (indent * (level + 1)) if indent else ''
+        
+        if isinstance(obj, list):
+            if not obj:  # 空列表
+                return '[]'
+            items = [encode_value(x, level + 1) for x in obj]
+            if multi_line and indent:
+                return '[\n' + next_indent + f',\n{next_indent}'.join(items) + '\n' + curr_indent + ']'
+            return '[' + ', '.join(items) + ']'
+            
+        if isinstance(obj, tuple):
+            if not obj:  # 空元组
+                return '()'
+            items = [encode_value(x, level + 1) for x in obj]
+            if len(obj) == 1:
+                return f'({items[0]},)'
+            if multi_line and indent:
+                return '(\n' + next_indent + f',\n{next_indent}'.join(items) + '\n' + curr_indent + ')'
+            return '(' + ', '.join(items) + ')'
+            
+        if isinstance(obj, set):
+            if not obj:  # 空集合
+                return '{}'
+            items = [encode_value(x, level + 1) for x in obj]
+            if multi_line and indent:
+                return '{\n' + next_indent + f',\n{next_indent}'.join(items) + '\n' + curr_indent + '}'
+            return '{' + ', '.join(items) + '}'
+            
+        if isinstance(obj, dict):
+            if not obj:  # 空字典
+                return '{}'
+            items = [encode_value(k, level + 1) + ': ' + encode_value(v, level + 1) 
+                    for k, v in obj.items()]
+            if multi_line and indent:
+                return '{\n' + next_indent + f',\n{next_indent}'.join(items) + '\n' + curr_indent + '}'
+            return '{' + ', '.join(items) + '}'
+            
+        raise Exception('Invalid JSON value: ' + str(obj))
+
+    return encode_value(obj)
+
+
+    
+from functools import wraps
+from typing import Type, TypeVar, Union
+
+T = TypeVar('T')
+
+def DataClass(cls: Type[T]) -> Type[T]:
+    """
+    将Python类装饰成可JSON序列化的类的装饰器
+
+    用法示例:
+    @DataClass
+    class Person:
+        def __init__(self, name: str, age: int):
+            self.name = name
+            self.age = age
+    """
+    
+    # 保存原始的__init__方法
+    original_init = cls.__init__
+
+    @wraps(cls.__init__)
+    def new_init(self, *args, **kwargs):
+        # 调用原始的__init__
+        original_init(self, *args, **kwargs)
+        # 添加to_json和from_json方法
+        self._json_attributes = {
+            key: value for key, value in self.__dict__.items() 
+            if not key.startswith('_')
+        }
+
+    def to_json(self) -> str:
+        """将对象转换为JSON字符串"""
+        return encode(self._json_attributes)
+
+    def to_dict(self) -> dict:
+        """将对象转换为字典"""
+        return self._json_attributes.copy()
+
+    @classmethod
+    def from_json(cls, json_str: Union[str, object]) -> T:
+        """从JSON字符串创建对象"""
+        if not isinstance(json_str, str):
+            json_str = str(json_str) # 转换为字符串
+        data = decode(json_str)
+        instance = cls.__new__(cls)
+        instance.__init__(**data)
+        return instance
+
+    @classmethod
+    def from_dict(cls, data: dict) -> T:
+        """从字典创建对象"""
+        instance = cls.__new__(cls)
+        instance.__init__(**data)
+        return instance
+
+    # 替换原始的__init__
+    cls.__init__ = new_init
+    
+    # 添加新的方法
+    cls.json = to_json
+    cls.dict = to_dict
+    cls.load_json = from_json
+    cls.load_dict = from_dict
+
+    return cls
 
 if __name__ == "__main__":
     text = """

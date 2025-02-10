@@ -8,7 +8,7 @@ readme_path = os.path.join(current_dir, 'readme-en.md')
 
 setup(
     name='simple-fjson',
-    version='0.1.2',
+    version='0.1.3',
     packages=find_packages(),
     description='A flexible JSON parser',
     long_description=open(readme_path, encoding='utf-8').read(),

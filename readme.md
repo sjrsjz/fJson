@@ -67,6 +67,20 @@ def decode(json_str):
     return fJsonBuilder(tokens).build()
 ```
 
+### encode(obj: Any, indent: int = None, multi_line: bool = False, ascii_only: bool = False) -> str
+
+将对象编码为 JSON 字符串。
+
+## 装饰器
+
+### @DataClass
+
+声明一个直接支持 fJson 序列化的数据类，自动添加以下方法：
+- `json(self, **kwargs) -> str`: 将对象编码为 JSON 字符串，支持 `indent`、`multi_line`、`ascii_only` 参数
+- `from_json(cls, json_str: str) -> Any`: 从 JSON 字符串解析对象
+- `dict(self) -> dict`: 将对象转换为字典
+- `from_dict(cls, data: dict) -> Any`: 从字典解析对象
+
 ## 例子
 
 ```python
@@ -112,4 +126,45 @@ $"YmFzZTY0IGVuY29kZWQgYmFzZTY0IGVuY29kZWQ=", // Base64 编码字符串
 """
 
 print(json.decode(fjson_str))
+
+
+@json.DataClass
+class Person:
+    def __init__(self, name: str, age: int, hobbies: list = None, pair: tuple = (), bytestr: bytes = b''):
+        self.name = name
+        self.age = age
+        self.hobbies = hobbies or []
+        self.pair = pair
+        self.bytestr = bytestr
+
+# 创建对象
+person = Person(name="张三", age=25, hobbies=["读书", "跑步"], pair=(1, ), bytestr=b'base64 encoded base64 encoded')
+
+# 转换为JSON
+json_str = person.json(indent = 4, multi_line = True, ascii_only = True)
+print("转换为JSON:")
+print(json_str)
+
+# 从JSON创建新对象
+new_person = Person.load_json(json_str)
+print("\n从JSON恢复:")
+print(f"姓名: {new_person.name}")
+print(f"年龄: {new_person.age}")
+print(f"爱好: {new_person.hobbies}")
+print(f"元组: {new_person.pair}")
+print(f"字节串: {new_person.bytestr}")
+
+# 转换为字典
+person_dict = person.dict()
+print("\n转换为字典:")
+print(person_dict)
+
+# 从字典创建新对象
+dict_person = Person.load_dict(person_dict)
+print("\n从字典恢复:")
+print(f"姓名: {dict_person.name}")
+print(f"年龄: {dict_person.age}")
+print(f"爱好: {dict_person.hobbies}")
+print(f"元组: {dict_person.pair}")
+print(f"字节串: {dict_person.bytestr}")
 ```
