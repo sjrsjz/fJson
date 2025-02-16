@@ -752,6 +752,8 @@ class fJsonOrderChange:
             return None
         if DEBUG:
             print("OrderChange", get_str_from_tokens(self.tokens[1:-1]))
+        if len(self.tokens) == 2:
+            return () # 空元组
         return fJsonValue(self.tokens[1:-1]).match()
 
 
@@ -1206,7 +1208,11 @@ class fJsonFunctionCall:
             return None
         
         function_name = fJsonBuilder(self.tokens[:-len(patterns[-1])]).build()
-        arguments = fJsonBuilder(patterns[-1][1:-1]).build()
+        if function_name == None:
+            return None
+        arguments = fJsonBuilder(patterns[-1]).build()
+        if not isinstance(arguments, tuple):
+            arguments = (arguments,)
         if DEBUG:
             print("FunctionCall", function_name, arguments)
         return fJsonSpecialType("FunctionCall", (function_name, arguments))
@@ -1408,7 +1414,7 @@ if __name__ == "__main__":
     "content": ">>> "
     }, \"\"\"AAAA\"\"\"))"""
 
-    #text = '"""A"""'
+    text = 'A(A=B,C)'
 
     print(fJsonLexer().tokenize(text))
 
