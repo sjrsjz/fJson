@@ -207,10 +207,81 @@ class fJsonLexer:
                     if currpos < len(str):
                         currpos += len(end_divider)  # Skip the closing delimiter
                         return current_token
+            if test_string('"""'):
+                currpos += 3
+                while currpos < len(str):
+                    if test_string('"""'):
+                        currpos += 3
+                        return current_token
+                    if str[currpos] == '\\':
+                        currpos += 1
+                        if currpos < len(str):
+                            escape_char = str[currpos]
+                            if escape_char == 'n':
+                                current_token += '\n'
+                            elif escape_char == 't':
+                                current_token += '\t'
+                            elif escape_char in ('"', '\\'):
+                                current_token += escape_char
+                            elif escape_char == 'u':
+                                try:
+                                    currpos += 1
+                                    if currpos < len(str):
+                                        hex_str = str[currpos:currpos + 4]
+                                        current_token += chr(int(hex_str, 16))
+                                        currpos += 3
+                                    else:
+                                        return None
+                                except ValueError:
+                                    return None
+                            else:
+                                current_token += '\\' + escape_char
+                            currpos += 1
+                        else:
+                            return None
+                    else:
+                        current_token += str[currpos]
+                        currpos += 1
+
+            if test_string("'''"):
+                currpos += 3
+                while currpos < len(str):
+                    if test_string("'''"):
+                        currpos += 3
+                        return current_token
+                    if str[currpos] == '\\':
+                        currpos += 1
+                        if currpos < len(str):
+                            escape_char = str[currpos]
+                            if escape_char == 'n':
+                                current_token += '\n'
+                            elif escape_char == 't':
+                                current_token += '\t'
+                            elif escape_char in ('"', '\\'):
+                                current_token += escape_char
+                            elif escape_char == 'u':
+                                try:
+                                    currpos += 1
+                                    if currpos < len(str):
+                                        hex_str = str[currpos:currpos + 4]
+                                        current_token += chr(int(hex_str, 16))
+                                        currpos += 3
+                                    else:
+                                        return None
+                                except ValueError:
+                                    return None
+                            else:
+                                current_token += '\\' + escape_char
+                            currpos += 1
+                        else:
+                            return None
+                    else:
+                        current_token += str[currpos]
+                        currpos += 1
             match_pair = {
                 '"': '"',
                 "'": "'",
-                '“': '”'
+                '“': '”',
                 # Add more pairs as needed
             }
             start_char = str[currpos]
@@ -259,6 +330,10 @@ class fJsonLexer:
             while currpos < len(str):
                 if str[currpos] in (' ', '\t', '\n', '\r', '\'', '"'):
                     break
+                if currpos < len(str) - 2:
+                    three_char = str[currpos:currpos + 3]
+                    if self.is_operator(three_char, 0):
+                        break
                 if currpos < len(str) - 1:
                     two_char = str[currpos:currpos + 2]
                     if self.is_operator(two_char, 0):
@@ -272,6 +347,11 @@ class fJsonLexer:
 
         def read_operator():
             nonlocal currpos
+            if currpos < len(str) - 2:
+                three_char = str[currpos:currpos + 3]
+                if self.is_operator(three_char, 0):
+                    currpos += 3
+                    return three_char
             if currpos < len(str) - 1:
                 two_char = str[currpos:currpos + 2]
                 if self.is_operator(two_char, 0):
@@ -330,7 +410,7 @@ class fJsonLexer:
 
     def is_operator(self, t, type):
         l = (t in {"+", "-", "*", "/", "\\", "%", "&", "!", "^", "~", "=", "==", ">", "<", "<=", ">=", "!=", "?=", "|", "?", ":>",
-                    "&&", ",", ".", "\n", ":", "->", "<<", ">>", "/*", "*/", ";", " ", ":=", "|>", "<|", "::", "--", "=>", "++", "||", ">>", "<<"})
+                    "&&", ",", ".", "\n", ":", "->", "<<", ">>", "/*", "*/", ";", " ", ":=", "|>", "<|", "::", "--", "=>", "++", "||", ">>", "<<", '"""', "'''"})
         if type == 0:
             l = l or (t in {"(", ")", "[", "]", "{", "}"})
         return l
@@ -609,6 +689,7 @@ class fJsonValue:
                 fJsonLines,
                 fJsonTuple,
                 fJsonDeclaration,
+                fJsonAssign,
                 fJsonPipe,
                 fJsonIfExpression,
                 fJsonConcat,
@@ -619,6 +700,8 @@ class fJsonValue:
                 fJsonDict,
                 fJsonSet,
                 fJsonList,
+                fJsonFunctionCall,
+                fJsonGetMember,
                 fJsonOrderChange
             ]
 
@@ -746,7 +829,7 @@ class fJsonPipe:
         right_value = fJsonBuilder(right).build()
         if DEBUG:
             print("Pipe", left_value, right_value)
-        return (left_value, right_value)
+        return fJsonSpecialType("Pipe", (left_value, right_value))
 
 class fJsonConcat:
     """
@@ -932,6 +1015,33 @@ class fJsonContains:
 
         raise Exception('Invalid contains operation: ' + str(left_value) + ' in ' + str(right_value) + '\n\tFound types: ' + str(type(left_value)) + ', ' + str(type(right_value)))
 
+class fJsonSpecialType:
+    """
+    特殊类型
+    """
+    def __init__(self, name, elements):
+        self.name = name
+        self.elements = elements
+
+    def __repr__(self):
+        return self.name + '(' + ', '.join([str(x) for x in self.elements]) + ')'
+    
+    def __str__(self):
+        return self.__repr__()
+    
+    def __eq__(self, other):
+        if not isinstance(other, fJsonSpecialType):
+            return False
+        if self.name != other.name:
+            return False
+        if len(self.elements) != len(other.elements):
+            return False
+        for i in range(len(self.elements)):
+            if self.elements[i] != other.elements[i]:
+                return False
+        return True
+
+
 
 class fJsonFunctionType:
     """
@@ -963,7 +1073,7 @@ class fJsonFunctionType:
             right_value = (right_value,)
 
         print("FunctionType", left_value, right_value)
-        return (left_value, right_value)
+        return fJsonSpecialType("FunctionType", (left_value, right_value))
 
 
 
@@ -991,7 +1101,7 @@ class fJsonLines:
         if len(lines) < 2:
             return None
         
-        return [fJsonBuilder(x).build() for x in lines]
+        return fJsonSpecialType("Lines", [fJsonBuilder(x).build() for x in lines])
 
 class fJsonDeclaration:
     """
@@ -1026,7 +1136,105 @@ class fJsonDeclaration:
         #value = fJsonBuilder(value).build()
         if DEBUG:
             print("Declaration", name, type_, get_str_from_tokens(value))
-        return (name, type_, value)
+        return fJsonSpecialType("Declaration", (name, type_, value))
+
+class fJsonGetMember:
+    """
+    获取成员
+    A.B.C
+    """
+    def __init__(self, tokens):
+        self.tokens = tokens
+    def match(self):
+        offset = 0
+        _tokens = []
+        while offset < len(self.tokens):
+            token = NextToken(self.tokens).next(offset)
+            offset += len(token)
+            if len(token) == 0:
+                return None
+            _tokens.append(token)
+        
+        # 逆序检查 "."
+
+        if len(_tokens) < 2:
+            return None
+        
+        token_len = 0
+        for i in range(1, len(_tokens)):
+            if len(_tokens[-i]) != 1:
+                token_len += len(_tokens[-i])
+                continue
+            if _tokens[-i][0]['type'] == fJsonTokenType.TokenType_SYMBOL and _tokens[-i][0]['token'] == '.':
+                if token_len == 0:
+                    return None
+                left = fJsonBuilder(self.tokens[:- token_len - 1]).build()
+                right = fJsonBuilder(self.tokens[- token_len:]).build()
+                if DEBUG:
+                    print("GetMember", left, right)
+                return fJsonSpecialType("GetMember", (left, right))
+            token_len += len(_tokens[-i])
+        return None
+
+class fJsonFunctionCall:
+    """
+    函数调用
+    A(B, C, D)
+    """
+    def __init__(self, tokens):
+        self.tokens = tokens
+    def match(self):
+        patterns = []
+
+        offset = 0
+        while offset < len(self.tokens):
+            token = NextToken(self.tokens).next(offset)
+            offset += len(token)
+            if len(token) == 0:
+                return None
+            patterns.append(token)
+
+        # 如果最后一个pattern是 "(...)"，则认为是函数调用
+        if len(patterns) == 0:
+            return None
+        
+        if len(patterns[-1]) < 2:
+            return None
+        if patterns[-1][0]['type'] != fJsonTokenType.TokenType_SYMBOL or patterns[-1][0]['token'] != '(': # (
+            return None
+        if patterns[-1][-1]['type'] != fJsonTokenType.TokenType_SYMBOL or patterns[-1][-1]['token'] != ')': # )
+            return None
+        
+        function_name = fJsonBuilder(self.tokens[:-len(patterns[-1])]).build()
+        arguments = fJsonBuilder(patterns[-1][1:-1]).build()
+        if DEBUG:
+            print("FunctionCall", function_name, arguments)
+        return fJsonSpecialType("FunctionCall", (function_name, arguments))
+
+class fJsonAssign:
+    """
+    赋值
+    A = B
+    """
+    def __init__(self, tokens):
+        self.tokens = tokens
+    def match(self):
+        offset = 0
+        left = NextToken(self.tokens).next(offset)
+        offset += len(left)
+        if len(left) == 0:
+            return None
+        if offset >= len(self.tokens):
+            return None
+        if self.tokens[offset]['type'] != fJsonTokenType.TokenType_SYMBOL or self.tokens[offset]['token'] != '=':
+            return None
+        offset += 1
+        right = self.tokens[offset:]
+        left_value = fJsonBuilder(left).build()
+        right_value = fJsonBuilder(right).build()
+        if DEBUG:
+            print("Assign", left_value, right_value)
+        return fJsonSpecialType("Assign", (left_value, right_value))
 
 def get_str_from_tokens(tokens):
     return ''.join([x['token'] for x in tokens])
@@ -1154,6 +1362,13 @@ def DataClass(cls: Type[T]) -> Type[T]:
         """将对象转换为字典"""
         return self._json_attributes.copy()
 
+    def set_attributes(self, key, value):
+        """设置对象属性"""
+        if hasattr(self, '_json_attributes'):
+            self._json_attributes[key] = value
+        super(cls, self).__setattr__(key, value)
+
+
     @classmethod
     def from_json(cls, json_str: Union[str, object]) -> T:
         """从JSON字符串创建对象"""
@@ -1179,6 +1394,7 @@ def DataClass(cls: Type[T]) -> Type[T]:
     cls.dict = to_dict
     cls.load_json = from_json
     cls.load_dict = from_dict
+    cls.__setattr__ = set_attributes
 
     return cls
 
@@ -1186,6 +1402,16 @@ if __name__ == "__main__":
     text = """
     (A :> [A,B]) ? ({A: 1, B: 2, C: 3} + {D: 4, E: 5, F: 6}) : ({1, 2, 3} * {4, 5, 6}); test:(A->B):=(A+B)
     """
+
+    text = """print(default_api.write_to_file(filename = "shell_persona_prompt", content = {
+    "type": "text",
+    "content": ">>> "
+    }, \"\"\"AAAA\"\"\"))"""
+
+    #text = '"""A"""'
+
+    print(fJsonLexer().tokenize(text))
+
     DEBUG = True
     try:
         print(decode(text))

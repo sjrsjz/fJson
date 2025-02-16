@@ -28,4 +28,4 @@ FlexibleJSON (fJson)
             self.age = age
 
 """
-from .fjson import decode, encode, DataClass
+from .fjson import decode, encode, DataClass, fJsonSpecialType
